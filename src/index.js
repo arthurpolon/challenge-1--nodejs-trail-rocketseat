@@ -11,7 +11,19 @@ app.use(express.json());
 const users = new Map();
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+
+  if (!username) {
+    return response.status(400).json({ error: 'Username is required in request headers' });
+  }
+
+  const userDoesNotExist = !users.has(username);
+
+  if (userDoesNotExist) {
+    return response.status(400).json({ error: 'User does not exists' });
+  } 
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
