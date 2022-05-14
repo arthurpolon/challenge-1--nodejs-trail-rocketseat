@@ -21,7 +21,7 @@ function checksExistsUserAccount(request, response, next) {
   const userDoesNotExist = !users.has(username);
 
   if (userDoesNotExist) {
-    return response.status(400).json({ error: 'User does not exists' });
+    return response.status(404).json({ error: 'User not found' });
   } 
 
   return next();
@@ -92,7 +92,7 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
   const selectedTodo = userTodos.get(id);
 
   if (!selectedTodo) {
-    return response.status(400).json({ error: 'Todo does not exists' });
+    return response.status(404).json({ error: 'Todo not found' });
   }
 
   const updatedTodoObject = {
@@ -107,7 +107,24 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { id } = request.params;
+  const { username } = request.headers;
+
+  const userTodos = users.get(username).todos;
+  const selectedTodo = userTodos.get(id);
+
+  if (!selectedTodo) {
+    return response.status(404).json({ error: 'Todo not found' });
+  }
+
+  const updatedTodoObject = {
+    ...selectedTodo,
+    done: true,
+  }
+
+  userTodos.set(id, updatedTodoObject);
+
+  return response.status(200).json(updatedTodoObject);
 });
 
 app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
