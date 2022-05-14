@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 
 const { v4: uuid } = require('uuid');
+const arrayFromMap = require('./utils/arrayFromMap');
 
 const app = express();
 
@@ -27,7 +28,8 @@ function checksExistsUserAccount(request, response, next) {
 }
 
 app.post('/users', (request, response) => {
-  const { username } = request.body;
+  const id = uuid();
+  const { username, name } = request.body;
 
   const userAlreadyExists = users.has(username);
 
@@ -35,20 +37,21 @@ app.post('/users', (request, response) => {
     return response.status(400).json({ error: 'User with same username already exists!' }); 
   }
 
-  const { name } = request.body;
-
-  const id = uuid();
-
   const newUserObject = {
     id,
     name,
     username,
-    todos: [],
+    todos: new Map(),
   }
 
   users.set(username, newUserObject);
 
-  return response.status(200).json(newUserObject);
+  const responseObject = {
+    ...newUserObject,
+    todos: arrayFromMap(newUserObject.todos),
+  }
+
+  return response.status(200).json(responseObject);
 });
 
 app.get('/todos', checksExistsUserAccount, (request, response) => {
@@ -56,11 +59,28 @@ app.get('/todos', checksExistsUserAccount, (request, response) => {
 
   const userTodos = users.get(username).todos
 
-  return response.status(200).json(userTodos);
+  const todosArray = arrayFromMap(userTodos);
+
+  return response.status(200).json(todosArray);
 });
 
 app.post('/todos', checksExistsUserAccount, (request, response) => {
-  // Complete aqui
+  const { username } = request.headers;
+  const { title, deadline } = request.body;
+  const id = uuid();
+
+  const newTodoObject = {
+    id,
+    title,
+    done: false,
+    deadline: new Date(deadline),
+    created_at: new Date()
+  }
+
+  const userTodos = users.get(username).todos;
+  userTodos.set(id, newTodoObject);
+
+  return response.status(201).json(newTodoObject)
 });
 
 app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
